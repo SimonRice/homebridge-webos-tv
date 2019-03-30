@@ -845,27 +845,25 @@ webosTvAccessory.prototype.powerOnTvWithCallback = function(callback) {
             this.log.info('webOS - wake on lan error');
             return;
         }
-        let x = 0;
-        let appLaunchInterval = setInterval(() => {
+        
+        let appLaunch = ((attempts) => {
             if (this.connected) {
                 this.log.info('webOS - power on callback - connected to tv, running callback');
                 setTimeout(callback.bind(this), 1000);
-                clearInterval(appLaunchInterval);
                 return;
             }
+
+            if (attempts === 0) {
+                return;
+            }
+
             this.log.info('webOS - power on callback - trying to connect to tv...');
             this.lgtv.connect(this.url, function(err, response) {
-                if (x++ === 7) {
-                    clearInterval(appLaunchInterval);
-                    return;
-                }
-
-                if (!res || err) {
-                    return;
-                }
-                this.connected = true;
+                appLaunch(attempts - 1)
             });
-        }, 5000);
+        });
+
+        appLaunch(7);
     });
 };
 
