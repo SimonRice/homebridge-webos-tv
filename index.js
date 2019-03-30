@@ -953,9 +953,10 @@ webosTvAccessory.prototype.setPowerState = function(state, callback) {
             if (error) {
                 this.log.info('webOS - wake on lan error');
                 return callback(new Error('webOS - wake on lan error'));
+            } else {
+                callback();
             }
         })
-        callback();
     } else {
         if (this.connected) {
             this.log.debug('webOS - power service - TV turned off');
@@ -965,9 +966,11 @@ webosTvAccessory.prototype.setPowerState = function(state, callback) {
                 this.setAppSwitchManually(null, false, null);
                 this.setChannelButtonManually(null, false, null);
                 this.setMuteStateManually(false);
+                callback();
             })
+        } else {
+            callback();
         }
-        callback();
     }
 };
 
