@@ -845,25 +845,22 @@ webosTvAccessory.prototype.powerOnTvWithCallback = function(callback) {
             this.log.info('webOS - wake on lan error');
             return;
         }
-        
-        let appLaunch = ((attempts) => {
+        let x = 0;
+        let appLaunchInterval = setInterval(() => {
             if (this.connected) {
-                this.log.info('webOS - power on callback - connected to tv, running callback');
+                this.log.debug('webOS - power on callback - connected to tv, running callback');
                 setTimeout(callback.bind(this), 1000);
+                clearInterval(appLaunchInterval);
                 return;
             }
+            this.log.debug('webOS - power on callback - trying to connect to tv...');
+            this.lgtv.connect(this.url);
 
-            if (attempts === 0) {
+            if (x++ === 7) {
+                clearInterval(appLaunchInterval);
                 return;
             }
-
-            this.log.info('webOS - power on callback - trying to connect to tv...');
-            this.lgtv.connect(this.url, function(err, response) {
-                appLaunch(attempts - 1)
-            });
-        });
-
-        appLaunch(7);
+        }, this.alivePollingInterval);
     });
 };
 
@@ -873,15 +870,8 @@ webosTvAccessory.prototype.checkTVState = function(callback) {
             this.connected = false;
             this.lgtv.disconnect();
         } else if (isAlive && !this.connected) {
-            this.lgtv.connect(this.url, function(err, response) {
-                if (!res || err) {
-                    callback(err, this.connected);
-                    return;
-                }
-                this.connected = true;
-                this.log.debug('webOS - TV state: %s', this.connected ? 'On' : 'Off');
-                callback(null, this.connected);
-            });
+            this.lgtv.connect(this.url);
+            this.connected = true;
             return;
         }
         this.log.debug('webOS - TV state: %s', this.connected ? 'On' : 'Off');
