@@ -848,19 +848,24 @@ webosTvAccessory.prototype.powerOnTvWithCallback = function(callback) {
         let x = 0;
         let appLaunchInterval = setInterval(() => {
             if (this.connected) {
-                this.log.debug('webOS - power on callback - connected to tv, running callback');
+                this.log.info('webOS - power on callback - connected to tv, running callback');
                 setTimeout(callback.bind(this), 1000);
                 clearInterval(appLaunchInterval);
                 return;
             }
-            this.log.debug('webOS - power on callback - trying to connect to tv...');
-            this.lgtv.connect(this.url);
+            this.log.info('webOS - power on callback - trying to connect to tv...');
+            this.lgtv.connect(this.url, function(err, response) {
+                if (x++ === 7) {
+                    clearInterval(appLaunchInterval);
+                    return;
+                }
 
-            if (x++ === 7) {
-                clearInterval(appLaunchInterval);
-                return;
-            }
-        }, 2000);
+                if (!res || err) {
+                    return;
+                }
+                this.connected = true;
+            });
+        }, 5000);
     });
 };
 
@@ -870,8 +875,16 @@ webosTvAccessory.prototype.checkTVState = function(callback) {
             this.connected = false;
             this.lgtv.disconnect();
         } else if (isAlive && !this.connected) {
-            this.lgtv.connect(this.url);
-            this.connected = true;
+            this.lgtv.connect(this.url, function(err, response) {
+                if (!res || err) {
+                    callback(err, this.connected);
+                    return;
+                }
+                this.connected = true;
+                this.log.debug('webOS - TV state: %s', this.connected ? 'On' : 'Off');
+                callback(null, this.connected);
+            });
+            return;
         }
         this.log.debug('webOS - TV state: %s', this.connected ? 'On' : 'Off');
         callback(null, this.connected);
@@ -947,17 +960,9 @@ webosTvAccessory.prototype.getPowerState = function(callback) {
 webosTvAccessory.prototype.setPowerState = function(state, callback) {
     if (state) {
         this.log.debug('webOS - power service - Trying to power on tv, sending magic packet');
-        wol.wake(this.mac, {
-            'address': this.broadcastAdr
-        }, (error) => {
-            if (error) {
-                this.log.info('webOS - wake on lan error');
-                return callback(new Error('webOS - wake on lan error'));
-            } else {
-                this.connected = true;
-                callback();
-            }
-        })
+        this.powerOnTvWithCallback(() => {
+            callback();
+        });
     } else {
         if (this.connected) {
             this.log.debug('webOS - power service - TV turned off');
