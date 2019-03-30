@@ -954,6 +954,7 @@ webosTvAccessory.prototype.setPowerState = function(state, callback) {
                 this.log.info('webOS - wake on lan error');
                 return callback(new Error('webOS - wake on lan error'));
             } else {
+                this.connected = true;
                 callback();
             }
         })
