@@ -848,12 +848,12 @@ webosTvAccessory.prototype.powerOnTvWithCallback = function(callback) {
         let x = 0;
         let appLaunchInterval = setInterval(() => {
             if (this.connected) {
-                this.log.debug('webOS - power on callback - connected to tv, running callback');
+                this.log.info('webOS - power on callback - connected to tv, running callback');
                 setTimeout(callback.bind(this), 1000);
                 clearInterval(appLaunchInterval);
                 return;
             }
-            this.log.debug('webOS - power on callback - trying to connect to tv...');
+            this.log.info('webOS - power on callback - trying to connect to tv...');
             this.lgtv.connect(this.url);
 
             if (x++ === 7) {
